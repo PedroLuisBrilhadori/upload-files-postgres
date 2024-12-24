@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import { App, initializeApp } from "./app.config";
 
 import { File } from "./file.model";
@@ -7,7 +8,7 @@ const routesGenerator = ({ app, dataSource, upload }: App) => {
   const filesRoutes = () => {
     const fileRepo = dataSource.getRepository(File);
     const dataFileRepo = dataSource.getRepository(FileData);
-    const blockSize = 1048576;
+    const blockSize = 1048576 * 5;
 
     app.post("/files", upload.single("file"), async (req, res) => {
       if (!req.file) {
@@ -15,10 +16,13 @@ const routesGenerator = ({ app, dataSource, upload }: App) => {
         return;
       }
 
-      const quantBlocks = Math.floor(req.file.size / blockSize);
+      const quantBlocks = Math.round(req.file.size / blockSize);
 
       const file = fileRepo.create({
         name: req.file?.originalname,
+        size: req.file.size,
+        type: req.file.mimetype,
+        length: quantBlocks,
       });
 
       await fileRepo.save(file);
@@ -27,9 +31,14 @@ const routesGenerator = ({ app, dataSource, upload }: App) => {
       let end = blockSize;
       const blocks = [];
 
-      for (let i = 0; i <= quantBlocks; i++) {
+      for (let i = 0; i < quantBlocks; i++) {
         if (i) {
-          end = blockSize * i;
+          const sum = i + 1;
+          if (sum == quantBlocks) {
+            end = req.file.buffer.length;
+          } else {
+            end = blockSize * sum;
+          }
         }
 
         const block = dataFileRepo.create({
@@ -40,16 +49,55 @@ const routesGenerator = ({ app, dataSource, upload }: App) => {
 
         blocks.push(block);
 
-        start = end + 1;
+        start = end;
       }
 
       await dataFileRepo.save(blocks);
 
-      res.send("ok");
+      res.send(`ok, fileid: ${file.id}`);
+    });
+  };
+
+  const downloadFiles = () => {
+    const fileRepo = dataSource.getRepository(File);
+    const dataFileRepo = dataSource.getRepository(FileData);
+
+    app.get(`/files/:id`, async (req, res) => {
+      const fileId = req.params.id;
+
+      const file = await fileRepo.findOne({
+        select: { name: true, size: true, type: true, length: true },
+        where: { id: fileId },
+      });
+
+      if (!file) {
+        res.send("no ok");
+        return;
+      }
+
+      res.writeHead(200, {
+        "Content-Type": file.type,
+        "Transfer-Encoding": "chunked",
+      });
+
+      for (let i = 0; i < file.length; i++) {
+        const chunk = await dataFileRepo.findOneOrFail({
+          select: { data: true },
+          where: {
+            fileId,
+            id: i,
+          },
+        });
+
+        res.write(chunk.data);
+      }
+
+      res.end();
     });
   };
 
   filesRoutes();
+  downloadFiles();
 };
 
 const main = async () => {

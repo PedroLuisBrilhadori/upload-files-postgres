@@ -15,6 +15,15 @@ export class File {
   @Column("varchar")
   name: string;
 
+  @Column("bigint")
+  size: number;
+
+  @Column("integer")
+  length: number;
+
+  @Column("varchar")
+  type: string;
+
   @OneToMany("FileData", "file")
   data: FileData[];
 }

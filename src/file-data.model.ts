@@ -6,10 +6,12 @@ export class FileData {
   id: number;
 
   @PrimaryColumn("uuid", { name: "file_id" })
-  @ManyToOne("File", "data")
-  @JoinColumn({ name: "file_id" })
   fileId: string;
 
   @Column("bytea")
   data: Buffer;
+
+  @ManyToOne("File", "data")
+  @JoinColumn({ name: "file_id" })
+  file: File;
 }
