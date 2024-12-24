@@ -4,7 +4,9 @@
   "description": "tests for storing file on postgreSQL",
   "main": "dist/main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "tsx src/main.ts",
+    "build": "tsc",
+    "start": "node dist/main.js"
   },
   "keywords": [
     "postgreSQL",
@@ -13,6 +15,7 @@
   "author": "PedroLuisBrilhadori",
   "license": "ISC",
   "dependencies": {
+    "dotenv": "^16.4.7",
     "pg": "^8.13.1",
     "reflect-metadata": "^0.2.2",
     "tsx": "^4.19.2",
