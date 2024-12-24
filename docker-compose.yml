@@ -1,0 +1,20 @@
+services:
+  postgres:
+    container_name: test-prosgres
+    working_dir: /usr/src/app
+    image: postgres
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE}
+      PGPORT: ${DB_PORT}
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+    volumes:
+      - ./volumes/create-database.sql:/docker-entrypoint-initdb.d/create-database.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
