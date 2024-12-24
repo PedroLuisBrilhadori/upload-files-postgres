@@ -12,6 +12,8 @@ export const ormConfig: DataSourceOptions = {
   database: process.env.DB_DATABASE,
   username: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
+  logging: false,
+  synchronize: true,
 
   entities: [FileData, File],
 };
