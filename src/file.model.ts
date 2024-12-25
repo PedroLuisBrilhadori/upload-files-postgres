@@ -12,6 +12,9 @@ export class File {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
+  @Column('varchar', {default: 'C:/'})
+  path: string;
+
   @Column("varchar")
   name: string;
 

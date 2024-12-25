@@ -16,7 +16,7 @@ const routesGenerator = ({ app, dataSource, upload }: App) => {
         return;
       }
 
-      const quantBlocks = Math.round(req.file.size / blockSize);
+      const quantBlocks = req.file.size < blockSize ? 1 : Math.round(req.file.size / blockSize);
 
       const file = fileRepo.create({
         name: req.file?.originalname,
@@ -58,6 +58,7 @@ const routesGenerator = ({ app, dataSource, upload }: App) => {
     });
   };
 
+  /** @deprecated não utiliza cursor para o stream de data_blocks */
   const downloadFiles = () => {
     const fileRepo = dataSource.getRepository(File);
     const dataFileRepo = dataSource.getRepository(FileData);
@@ -78,6 +79,7 @@ const routesGenerator = ({ app, dataSource, upload }: App) => {
       res.writeHead(200, {
         "Content-Type": file.type,
         "Transfer-Encoding": "chunked",
+        'Content-Disposition': `attachment; filename="${file.name}"`,
       });
 
       for (let i = 0; i < file.length; i++) {
@@ -96,8 +98,58 @@ const routesGenerator = ({ app, dataSource, upload }: App) => {
     });
   };
 
+  const streamPosgres = () => {
+    const fileRepo = dataSource.getRepository(File);
+    const dataFileRepo = dataSource.getRepository(FileData);
+    const builder = dataFileRepo.createQueryBuilder('byte');
+
+    const path = 'C:/data';
+
+    app.get(`/stream/:id`, async (req, res) => {
+      const fileId = req.params.id;
+
+      const file = await fileRepo.findOne({
+        select: { name: true, size: true, type: true, length: true },
+        where: { 
+          path, 
+          id: fileId,
+         },
+      });
+
+      if (!file) {
+        res.send("no ok");
+        return;
+      }
+
+      res.writeHead(200, {
+        "Content-Type": file.type,
+        "Transfer-Encoding": "chunked",
+        // 'Content-Disposition': `attachment; filename="${file.name}"`,
+      });
+
+      const query = builder.select([
+        "byte.data"
+      ])
+      .where("byte.path = :path", {path})
+      .andWhere("byte.file_id = :fileId", {fileId})
+      .orderBy('byte.id', 'ASC');
+
+
+      const stream = await query.stream();
+
+      stream.on('data', (data: {byte_data: Buffer}) => {
+         res.write(data.byte_data);
+      });
+
+
+      stream.on('end', () => {
+        res.end();
+      })
+    });
+  }
+
+  streamPosgres();
   filesRoutes();
-  downloadFiles();
 };
 
 const main = async () => {

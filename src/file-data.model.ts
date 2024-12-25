@@ -8,6 +8,9 @@ export class FileData {
   @PrimaryColumn("uuid", { name: "file_id" })
   fileId: string;
 
+  @Column('varchar', {default: 'C:/'})
+  path: string;
+
   @Column("bytea")
   data: Buffer;
 
