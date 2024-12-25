@@ -11,8 +11,8 @@ export class FileData {
   @Column('varchar', {default: 'C:/'})
   path: string;
 
-  @Column("bytea")
-  data: Buffer;
+  @Column("text")
+  data: string;
 
   @ManyToOne("File", "data")
   @JoinColumn({ name: "file_id" })

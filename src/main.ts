@@ -41,10 +41,13 @@ const routesGenerator = ({ app, dataSource, upload }: App) => {
           }
         }
 
+        const buffer = req.file.buffer.subarray(start, end); 
+        const data = buffer.toString('base64');
+
         const block = dataFileRepo.create({
           fileId: file.id,
           id: i,
-          data: req.file.buffer.subarray(start, end),
+          data,
         });
 
         blocks.push(block);
@@ -103,7 +106,7 @@ const routesGenerator = ({ app, dataSource, upload }: App) => {
     const dataFileRepo = dataSource.getRepository(FileData);
     const builder = dataFileRepo.createQueryBuilder('byte');
 
-    const path = 'C:/data';
+    const path = 'C:/';
 
     app.get(`/stream/:id`, async (req, res) => {
       const fileId = req.params.id;
@@ -137,8 +140,9 @@ const routesGenerator = ({ app, dataSource, upload }: App) => {
 
       const stream = await query.stream();
 
-      stream.on('data', (data: {byte_data: Buffer}) => {
-         res.write(data.byte_data);
+      stream.on('data', (data: {byte_data: string}) => {
+        const buffer = Buffer.from(data.byte_data, 'base64'); 
+        res.write(buffer);
       });
 
 
